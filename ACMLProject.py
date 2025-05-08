@@ -14,14 +14,17 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 # ========================
 df = pd.read_csv('student_habits_performance.csv')
 
-# Drop non-predictive ID column
+# Drop student_ID column
 df = df.drop(columns=['student_id'])
 
 # Separate features and target
-X = df.drop(columns=['exam_score'])
-y = df['exam_score']
+X = df.drop(columns=['exam_score']) #features
+y = df['exam_score'] #target
 
 # Define feature types
+#Categorical features are the one's we'll use one-shot encoding for
+#numerical features are the ones will normalize
+
 categorical_features = [
     'gender',
     'part_time_job',
@@ -29,7 +32,8 @@ categorical_features = [
     'extracurricular_participation',
     'diet_quality',
     'internet_quality'
-]
+] 
+
 numerical_features = [col for col in X.columns if col not in categorical_features]
 
 # ==========================
@@ -38,10 +42,12 @@ numerical_features = [col for col in X.columns if col not in categorical_feature
 numeric_transformer = StandardScaler()
 categorical_transformer = OneHotEncoder(drop='first', handle_unknown='ignore')
 
+#refining features for processing
 preprocessor = ColumnTransformer([
     ('num', numeric_transformer, numerical_features),
     ('cat', categorical_transformer, categorical_features)
 ])
+
 
 # =======================
 # 3. Train/Val/Test Split
@@ -100,6 +106,22 @@ print(f"\nTest MAE: {test_mae:.3f}, Test MSE: {test_loss:.3f}")
 # ============================
 plt.figure(figsize=(14, 5))
 
+# Plot Loss
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss (MSE)')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid(True)
 
-plt.tight_layout()
-plt.show()
+# Plot MAE
+plt.subplot(1, 2, 2)
+plt.plot(history.history['mae'], label='Training MAE')
+plt.plot(history.history['val_mae'], label='Validation MAE')
+plt.title('Model Mean Absolute Error')
+plt.xlabel('Epoch')
+plt.ylabel('MAE')
+plt.legend()
+plt.grid(True)
