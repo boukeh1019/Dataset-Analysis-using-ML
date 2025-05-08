@@ -100,25 +100,6 @@ print(f"\nTest MAE: {test_mae:.3f}, Test MSE: {test_loss:.3f}")
 # ============================
 plt.figure(figsize=(14, 5))
 
-# Plot Loss
-plt.subplot(1, 2, 1)
-plt.plot(history.history['loss'], label='Training Loss')
-plt.plot(history.history['val_loss'], label='Validation Loss')
-plt.title('Model Loss (MSE)')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-plt.grid(True)
-
-# Plot MAE
-plt.subplot(1, 2, 2)
-plt.plot(history.history['mae'], label='Training MAE')
-plt.plot(history.history['val_mae'], label='Validation MAE')
-plt.title('Model Mean Absolute Error')
-plt.xlabel('Epoch')
-plt.ylabel('MAE')
-plt.legend()
-plt.grid(True)
 
 plt.tight_layout()
 plt.show()
