@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
@@ -125,3 +127,29 @@ plt.xlabel('Epoch')
 plt.ylabel('MAE')
 plt.legend()
 plt.grid(True)
+
+
+# ==============================
+# 10. Feature Importance via RF
+# ==============================
+# Train Random Forest on full data (for interpretability)
+X_all_processed = preprocessor.fit_transform(X)
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X_all_processed, y)
+
+# Get feature names
+cat_feature_names = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_features)
+all_feature_names = numerical_features + list(cat_feature_names)
+
+# Plot top features
+importances = rf.feature_importances_
+indices = np.argsort(importances)[::-1]
+top_n = 10
+
+plt.figure(figsize=(10, 6))
+sns.barplot(x=importances[indices][:top_n], y=np.array(all_feature_names)[indices][:top_n])
+plt.title("Top 10 Feature Importances (Random Forest)")
+plt.xlabel("Importance Score")
+plt.ylabel("Feature")
+plt.tight_layout()
+plt.show()
