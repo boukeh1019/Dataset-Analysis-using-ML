@@ -81,7 +81,7 @@ model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
 # ========================
 # 6. Callbacks for tuning
 # ========================
-early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+early_stop = EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True)
 checkpoint = ModelCheckpoint('best_model.keras', monitor='val_loss', save_best_only=True, verbose=1)
 
 # =====================
@@ -90,7 +90,7 @@ checkpoint = ModelCheckpoint('best_model.keras', monitor='val_loss', save_best_o
 history = model.fit(
     X_train_processed, y_train,
     validation_data=(X_val_processed, y_val),
-    epochs=100,
+    epochs=500,
     batch_size=32,  # adjusted for efficiency
     callbacks=[early_stop, checkpoint],
     verbose=1
