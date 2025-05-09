@@ -46,7 +46,7 @@ X_train_processed = preprocessor.fit_transform(X_train)
 X_test_processed = preprocessor.transform(X_test)
 
 ## Creating the regression tree
-tree = DecisionTreeRegressor(max_depth=5, random_state=42)
+tree = DecisionTreeRegressor(max_depth=15, random_state=42)
 tree.fit(X_train_processed, y_train)
 
 ## evaluation part of the tree
