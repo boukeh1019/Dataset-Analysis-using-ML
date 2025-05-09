@@ -46,7 +46,7 @@ X_train_processed = preprocessor.fit_transform(X_train)
 X_test_processed = preprocessor.transform(X_test)
 
 ## Creating the regression tree
-tree = DecisionTreeRegressor(max_depth=15, random_state=42)
+tree = DecisionTreeRegressor(max_depth=10, random_state=42)
 tree.fit(X_train_processed, y_train)
 
 ## evaluation part of the tree
@@ -57,12 +57,3 @@ mse = mean_squared_error(y_test, y_pred)
 print(f"\n[Regression tree]")
 print(f"Test MAE: {mae:.3f}")
 print(f"Test MSE: {mse:.3f}")
-
-
-##Graphs part
-feature_names = numerical_features + list(preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_features))
-plt.figure(figsize=(20, 10))
-plot_tree(tree, feature_names=feature_names, filled=True, rounded=True, fontsize=10)
-plt.title("Decision Tree Regressor (Max Depth = 5)")
-plt.tight_layout()
-plt.show()
