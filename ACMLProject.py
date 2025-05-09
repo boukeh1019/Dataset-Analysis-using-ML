@@ -11,9 +11,7 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-# ========================
-# 1. Load & Prepare Dataset
-# ========================
+
 df = pd.read_csv('student_habits_performance.csv')
 
 # Drop student_ID column
@@ -24,8 +22,8 @@ X = df.drop(columns=['exam_score']) #features
 y = df['exam_score'] #target
 
 # Define feature types
-#Categorical features are the one's we'll use one-shot encoding for
-#numerical features are the ones will normalize
+# Categorical features are the one's we'll use one-shot encoding for
+# numerical features are the ones will normalize
 
 categorical_features = [
     'gender',
@@ -38,9 +36,6 @@ categorical_features = [
 
 numerical_features = [col for col in X.columns if col not in categorical_features]
 
-# ==========================
-# 2. Preprocessing pipeline
-# ==========================
 numeric_transformer = StandardScaler()
 categorical_transformer = OneHotEncoder(drop='first', handle_unknown='ignore')
 
@@ -51,22 +46,14 @@ preprocessor = ColumnTransformer([
 ])
 
 
-# =======================
-# 3. Train/Val/Test Split
-# =======================
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-# ======================
-# 4. Transform Features
-# ======================
+
 X_train_processed = preprocessor.fit_transform(X_train)
 X_val_processed = preprocessor.transform(X_val)
 X_test_processed = preprocessor.transform(X_test)
 
-# ======================
-# 5. Build & Tune Model
-# ======================
 input_dim = X_train_processed.shape[1]
 model = Sequential([
     Dense(128, activation='relu', input_dim=input_dim),
@@ -78,15 +65,11 @@ model = Sequential([
 
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
 
-# ========================
-# 6. Callbacks for tuning
-# ========================
+
 early_stop = EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True)
 checkpoint = ModelCheckpoint('best_model.keras', monitor='val_loss', save_best_only=True, verbose=1)
 
-# =====================
-# 7. Train the model
-# =====================
+
 history = model.fit(
     X_train_processed, y_train,
     validation_data=(X_val_processed, y_val),
@@ -96,16 +79,10 @@ history = model.fit(
     verbose=1
 )
 
-# =====================
-# 8. Evaluate & Save
-# =====================
 test_loss, test_mae = model.evaluate(X_test_processed, y_test, verbose=0)
 model.save("final_model.keras")  # Save in native format
 print(f"\nTest MAE: {test_mae:.3f}, Test MSE: {test_loss:.3f}")
 
-# ============================
-# 9. Plot Training History
-# ============================
 plt.figure(figsize=(14, 5))
 
 # Plot Loss
@@ -129,9 +106,6 @@ plt.legend()
 plt.grid(True)
 
 
-# ==============================
-# 10. Feature Importance via RF
-# ==============================
 # Train Random Forest on full data (for interpretability)
 X_all_processed = preprocessor.fit_transform(X)
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
