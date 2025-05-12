@@ -4,22 +4,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, mean_squared_error
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+from tensorflow.keras.callbacks import EarlyStopping
 
 # ========================
 # 1. Load and Clean Dataset
 # ========================
 df = pd.read_csv('student_habits_performance.csv')
-
-# Drop ID column
 df.drop(columns=['student_id'], inplace=True)
-
-# Fill missing values in parental education with the mode
-df['parental_education_level'].fillna(df['parental_education_level'].mode()[0], inplace=True)
+# df['parental_education_level'].fillna(df['parental_education_level'].mode()[0], inplace=True)
 
 # ============================
 # 2. Convert Exam Score to Grades
@@ -53,15 +50,12 @@ for col in categorical_cols:
     df[col] = le.fit_transform(df[col])
     label_encoders[col] = le
 
-# Encode the target variable
 target_le = LabelEncoder()
-df['performance'] = target_le.fit_transform(df['performance'])  # A–F to 0–4
-
-# Drop continuous target
+df['performance'] = target_le.fit_transform(df['performance'])  # 'A'–'F' to 0–4
 df.drop(columns=['exam_score'], inplace=True)
 
 # ========================
-# 4. Split and Normalize Data
+# 4. Train/Val/Test Split
 # ========================
 X = df.drop(columns=['performance'])
 y = df['performance']
@@ -69,19 +63,19 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 y_encoded = to_categorical(y)
 
-# Train-val-test split (70/15/15)
-X_train, X_temp, y_train, y_temp = train_test_split(X_scaled, y_encoded, test_size=0.3, random_state=42)
+X_train, X_temp, y_train, y_temp = train_test_split(X_scaled, y_encoded, test_size=0.5, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-
 # ========================
-# 5. Build and Train Model (with EarlyStopping)
+# 5. Define & Compile Model
 # ========================
 model = Sequential([
-    Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
-    Dropout(0.4),  # increased from 0.3
-    Dense(32, activation='relu'),
-    Dropout(0.3),  # increased from 0.2
+    Dense(64, activation='relu', kernel_regularizer=l2(0.001), input_shape=(X_train.shape[1],)),
+    BatchNormalization(),
+    Dropout(0.4),
+    Dense(32, activation='relu', kernel_regularizer=l2(0.001)),
+    BatchNormalization(),
+    Dropout(0.3),
     Dense(y_encoded.shape[1], activation='softmax')
 ])
 
@@ -91,35 +85,37 @@ model.compile(
     metrics=['accuracy']
 )
 
+# ========================
+# 6. EarlyStopping Callback
+# ========================
 early_stop = EarlyStopping(
     monitor='val_loss',
-    patience=10,
+    patience=5,
     restore_best_weights=True,
     verbose=1
 )
 
+# ========================
+# 7. Train the Model
+# ========================
 history = model.fit(
     X_train, y_train,
     validation_data=(X_val, y_val),
-    epochs=100,  # extended to allow early stopping
+    epochs=100,
     batch_size=32,
     callbacks=[early_stop],
     verbose=1
 )
 
-
 # ========================
-# 6. Evaluate Performance
+# 8. Evaluate and Plot
 # ========================
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-print(f"Test Accuracy: {accuracy:.2f}")
+print(f"\nTest Accuracy: {accuracy:.2f}")
 
-# ========================
-# 7. Plot Training Curves
-# ========================
+# Plot Accuracy and Loss
 plt.figure(figsize=(12, 5))
 
-# Accuracy Plot
 plt.subplot(1, 2, 1)
 plt.plot(history.history['accuracy'], label='Train Accuracy', marker='o')
 plt.plot(history.history['val_accuracy'], label='Val Accuracy', marker='o')
@@ -129,7 +125,6 @@ plt.ylabel('Accuracy')
 plt.legend()
 plt.grid(True)
 
-# Loss Plot
 plt.subplot(1, 2, 2)
 plt.plot(history.history['loss'], label='Train Loss', marker='o')
 plt.plot(history.history['val_loss'], label='Val Loss', marker='o')
@@ -143,32 +138,25 @@ plt.tight_layout()
 plt.show()
 
 # ========================
-# 8. Optional MSE (Not usually used for classification)
+# 9. Confusion Matrix & Report
 # ========================
 y_pred_probs = model.predict(X_test)
-mse = mean_squared_error(y_test, y_pred_probs)
-print(f"Mean Squared Error (for reference only): {mse:.3f}")
-
-
-# Convert predictions from probabilities to class indices
 y_pred_classes = np.argmax(y_pred_probs, axis=1)
 y_true_classes = np.argmax(y_test, axis=1)
 
-# =============================
-# 9. Confusion Matrix & Metrics
-# =============================
-
-# Confusion Matrix
 cm = confusion_matrix(y_true_classes, y_pred_classes)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=target_le.classes_)
 
-plt.figure(figsize=(8, 6))
-disp.plot(cmap='Blues', values_format='d')
-plt.title('Confusion Matrix')
-plt.grid(False)
-plt.tight_layout()
-plt.show()
+# # plt.figure(figsize=(8, 6))
+# # disp.plot(cmap='Blues', values_format='d')
+# # plt.title('Confusion Matrix')
+# # plt.grid(False)
+# # plt.tight_layout()
+# plt.show()
 
-# Classification Report
-print("\nClassification Report:")
-print(classification_report(y_true_classes, y_pred_classes, target_names=target_le.classes_))
+# print("\nClassification Report:")
+# print(classification_report(y_true_classes, y_pred_classes, target_names=target_le.classes_))
+
+# Optional MSE (not critical for classification)
+mse = mean_squared_error(y_test, y_pred_probs)
+print(f"Mean Squared Error (for reference): {mse:.3f}")

@@ -46,7 +46,7 @@ preprocessor = ColumnTransformer([
 ])
 
 
-X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
 
@@ -83,27 +83,27 @@ test_loss, test_mae = model.evaluate(X_test_processed, y_test, verbose=0)
 model.save("final_model.keras")  # Save in native format
 print(f"\nTest MAE: {test_mae:.3f}, Test MSE: {test_loss:.3f}")
 
-plt.figure(figsize=(14, 5))
+# plt.figure(figsize=(14, 5))
 
-# Plot Loss
-plt.subplot(1, 2, 1)
-plt.plot(history.history['loss'], label='Training Loss')
-plt.plot(history.history['val_loss'], label='Validation Loss')
-plt.title('Model Loss (MSE)')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-plt.grid(True)
+# # Plot Loss
+# plt.subplot(1, 2, 1)
+# plt.plot(history.history['loss'], label='Training Loss')
+# plt.plot(history.history['val_loss'], label='Validation Loss')
+# plt.title('Model Loss (MSE)')
+# plt.xlabel('Epoch')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.grid(True)
 
-# Plot MAE
-plt.subplot(1, 2, 2)
-plt.plot(history.history['mae'], label='Training MAE')
-plt.plot(history.history['val_mae'], label='Validation MAE')
-plt.title('Model Mean Absolute Error')
-plt.xlabel('Epoch')
-plt.ylabel('MAE')
-plt.legend()
-plt.grid(True)
+# # Plot MAE
+# plt.subplot(1, 2, 2)
+# plt.plot(history.history['mae'], label='Training MAE')
+# plt.plot(history.history['val_mae'], label='Validation MAE')
+# plt.title('Model Mean Absolute Error')
+# plt.xlabel('Epoch')
+# plt.ylabel('MAE')
+# plt.legend()
+# plt.grid(True)
 
 
 # Train Random Forest on full data (for interpretability)
@@ -126,4 +126,4 @@ all_feature_names = numerical_features + list(cat_feature_names)
 # plt.xlabel("Importance Score")
 # plt.ylabel("Feature")
 # plt.tight_layout()
-plt.show()
+# plt.show()
