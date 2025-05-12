@@ -73,15 +73,16 @@ y_encoded = to_categorical(y)
 X_train, X_temp, y_train, y_temp = train_test_split(X_scaled, y_encoded, test_size=0.3, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
+
 # ========================
-# 5. Build and Train Model
+# 5. Build and Train Model (with EarlyStopping)
 # ========================
 model = Sequential([
     Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
-    Dropout(0.3),
+    Dropout(0.4),  # increased from 0.3
     Dense(32, activation='relu'),
-    Dropout(0.2),
-    Dense(y_encoded.shape[1], activation='softmax')  # Number of classes
+    Dropout(0.3),  # increased from 0.2
+    Dense(y_encoded.shape[1], activation='softmax')
 ])
 
 model.compile(
@@ -90,13 +91,22 @@ model.compile(
     metrics=['accuracy']
 )
 
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=10,
+    restore_best_weights=True,
+    verbose=1
+)
+
 history = model.fit(
     X_train, y_train,
     validation_data=(X_val, y_val),
-    epochs=30,
+    epochs=100,  # extended to allow early stopping
     batch_size=32,
+    callbacks=[early_stop],
     verbose=1
 )
+
 
 # ========================
 # 6. Evaluate Performance
