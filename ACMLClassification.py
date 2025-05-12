@@ -1,147 +1,115 @@
 import pandas as pd
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from geopy.distance import geodesic
-from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.utils import to_categorical
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
 
-data = pd.read_csv('student_habits_performance.csv')
-# data
+# ========================
+# 1. Load and Clean Dataset
+# ========================
+df = pd.read_csv('student_habits_performance.csv')
 
-# Data Exploration
+# Drop ID column
+df.drop(columns=['student_id'], inplace=True)
 
-missing_data = data.isnull().sum()
-# print("Missing data per column:")
-# print(missing_data)
+# Fill missing values in parental education with the mode
+df['parental_education_level'].fillna(df['parental_education_level'].mode()[0], inplace=True)
 
-#  Check the percentage of missing data
-missing_percentage = (data.isnull().sum() / len(data)) * 100
-# print("Percentage of missing data per column:")
-# print(missing_percentage)
-
-# #  Visualize missing data
-# plt.figure(figsize=(12, 8))
-# sns.heatmap(data.isnull(), cbar=False, cmap='viridis')
-# plt.title('Missing Data Heatmap')
-# plt.show()
-
-#  Descriptive statistics for numerical columns
-# print("Descriptive statistics for numerical columns:")
-# print(data.describe())
-
-
-#  Correlation matrix for numerical features
-numerical_data = data.select_dtypes(include=[np.number])
-
-# Calculate correlation matrix for numerical features
-correlation_matrix = numerical_data.corr()
-plt.figure(figsize=(12, 8))
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f')
-plt.title('Correlation Matrix')
-# plt.show()
-
-#  Check for duplicate rows
-duplicates = data.duplicated().sum()
-# print(f'Number of duplicate rows: {duplicates}')
-# do outliers, feature importance
-
-# fill missing values in the column parental_education_level using mode() which returns the most frequent (common) value in the column
-data['parental_education_level'].fillna(data['parental_education_level'].mode()[0], inplace=True)
-missing_data = data.isnull().sum()
-# print("Missing data per column:")
-# print(missing_data)
-
-# classification problem
-
+# ============================
+# 2. Convert Exam Score to Grades
+# ============================
 def categorize_performance(score):
-    if score <= 50:
-        return "Low"
-    elif score <= 75:
-        return "Medium"
+    if score <= 49:
+        return "F"
+    elif score <= 59:
+        return "D"
+    elif score <= 69:
+        return "C"
+    elif score <= 74:
+        return "B"
     else:
-        return "High"
+        return "A"
 
-data["performance"] = data["exam_score"].apply(categorize_performance)
-# data
+df['performance'] = df['exam_score'].apply(categorize_performance)
 
-
-# Label encode categorical features (numerical values)
-categorical_cols = ['gender', 'part_time_job', 'diet_quality', 'parental_education_level',
-                    'internet_quality', 'extracurricular_participation']
+# ========================
+# 3. Encode Categorical Features
+# ========================
+categorical_cols = [
+    'gender', 'part_time_job', 'diet_quality',
+    'parental_education_level', 'internet_quality',
+    'extracurricular_participation'
+]
 
 label_encoders = {}
 for col in categorical_cols:
     le = LabelEncoder()
-    data[col] = le.fit_transform(data[col])
+    df[col] = le.fit_transform(df[col])
     label_encoders[col] = le
 
-# Encode the target variable 'performance'
+# Encode the target variable
 target_le = LabelEncoder()
-data["performance"] = target_le.fit_transform(data["performance"])  # Low=0, Medium=1, High=2
-# data
+df['performance'] = target_le.fit_transform(df['performance'])  # A–F to 0–4
 
+# Drop continuous target
+df.drop(columns=['exam_score'], inplace=True)
 
-from sklearn.model_selection import train_test_split
-
-# Drop non-numeric/non-useful columns
-data = data.drop(columns=["student_id", "exam_score"]) 
-
-# Separate Features and Labels
-X = data.drop("performance", axis=1)
-y = data["performance"]
-
-
-
-# Normalize features
+# ========================
+# 4. Split and Normalize Data
+# ========================
+X = df.drop(columns=['performance'])
+y = df['performance']
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-
-# Convert labels to one-hot encoding
 y_encoded = to_categorical(y)
 
-# Train-validation-test split
+# Train-val-test split (70/15/15)
 X_train, X_temp, y_train, y_temp = train_test_split(X_scaled, y_encoded, test_size=0.3, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
-X_scaled
 
-import tensorflow as tf
-# Defining the Model
+# ========================
+# 5. Build and Train Model
+# ========================
 model = Sequential([
     Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
     Dropout(0.3),
     Dense(32, activation='relu'),
     Dropout(0.2),
-    Dense(3, activation='softmax')  # 3 classes: Low, Medium, High
+    Dense(y_encoded.shape[1], activation='softmax')  # Number of classes
 ])
-# Dropout layer: Helps prevent overfitting by randomly disabling some neurons during training.
-# optimizer='adam': adjusts the learning rate and other parameters during training to help the model learn more efficiently.
-# loss='categorical_crossentropy': loss function used for multi-class classification problems
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
 
-# model.summary()
+model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
 
-history = model.fit(X_train, y_train,
-                    validation_data=(X_val, y_val),
-                    epochs=30,
-                    batch_size=32)
+history = model.fit(
+    X_train, y_train,
+    validation_data=(X_val, y_val),
+    epochs=30,
+    batch_size=32,
+    verbose=1
+)
 
-
-loss, accuracy = model.evaluate(X_test, y_test)
+# ========================
+# 6. Evaluate Performance
+# ========================
+loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
 print(f"Test Accuracy: {accuracy:.2f}")
 
-
-import matplotlib.pyplot as plt
-
-# Plot Accuracy
+# ========================
+# 7. Plot Training Curves
+# ========================
 plt.figure(figsize=(12, 5))
 
+# Accuracy Plot
 plt.subplot(1, 2, 1)
 plt.plot(history.history['accuracy'], label='Train Accuracy', marker='o')
 plt.plot(history.history['val_accuracy'], label='Val Accuracy', marker='o')
@@ -151,7 +119,7 @@ plt.ylabel('Accuracy')
 plt.legend()
 plt.grid(True)
 
-# Plot Loss
+# Loss Plot
 plt.subplot(1, 2, 2)
 plt.plot(history.history['loss'], label='Train Loss', marker='o')
 plt.plot(history.history['val_loss'], label='Val Loss', marker='o')
@@ -164,25 +132,33 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-from sklearn.metrics import mean_squared_error, r2_score
+# ========================
+# 8. Optional MSE (Not usually used for classification)
+# ========================
+y_pred_probs = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred_probs)
+print(f"Mean Squared Error (for reference only): {mse:.3f}")
 
-# Evaluate the model on the test set
-y_pred = model.predict(X_test)
 
-# Calculate Mean Squared Error (MSE) and R2 Score
-mse = mean_squared_error(y_test, y_pred)
-# r2 = r2_score(y_test, y_pred)
+# Convert predictions from probabilities to class indices
+y_pred_classes = np.argmax(y_pred_probs, axis=1)
+y_true_classes = np.argmax(y_test, axis=1)
 
-print(f'Mean Squared Error: {mse}')
-# print(f'R2 Score: {r2}')
+# =============================
+# 9. Confusion Matrix & Metrics
+# =============================
 
-from sklearn.dummy import DummyRegressor
+# Confusion Matrix
+cm = confusion_matrix(y_true_classes, y_pred_classes)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=target_le.classes_)
 
-# Train a baseline model (predicting the mean)
-baseline_model = DummyRegressor(strategy='mean')
-baseline_model.fit(X_train, y_train)
-y_baseline_pred = baseline_model.predict(X_test)
+plt.figure(figsize=(8, 6))
+disp.plot(cmap='Blues', values_format='d')
+plt.title('Confusion Matrix')
+plt.grid(False)
+plt.tight_layout()
+plt.show()
 
-# Calculate baseline performance
-baseline_mse = mean_squared_error(y_test, y_baseline_pred)
-print(f'Baseline Model MSE: {baseline_mse}')
+# Classification Report
+print("\nClassification Report:")
+print(classification_report(y_true_classes, y_pred_classes, target_names=target_le.classes_))
