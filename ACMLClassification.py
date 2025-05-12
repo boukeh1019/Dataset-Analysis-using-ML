@@ -14,13 +14,8 @@ from sklearn.utils import class_weight
 
 
 
-
-# ========================
-# 1. Load and Clean Dataset
-# ========================
 df = pd.read_csv('student_habits_performance.csv')
 df.drop(columns=['student_id'], inplace=True)
-# df['parental_education_level'].fillna(df['parental_education_level'].mode()[0], inplace=True)
 
 # Convert Exam Score to Grades
 
@@ -38,9 +33,6 @@ def categorize_performance(score):
 
 df['performance'] = df['exam_score'].apply(categorize_performance)
 
-# ========================
-# 3. Encode Categorical Features
-# ========================
 categorical_cols = [
     'gender', 'part_time_job', 'diet_quality',
     'parental_education_level', 'internet_quality',
@@ -57,9 +49,7 @@ target_le = LabelEncoder()
 df['performance'] = target_le.fit_transform(df['performance'])  # 'A'–'F' to 0–4
 df.drop(columns=['exam_score'], inplace=True)
 
-# ========================
-# 4. Train/Val/Test Split
-# ========================
+
 X = df.drop(columns=['performance'])
 y = df['performance']
 scaler = StandardScaler()
@@ -69,9 +59,7 @@ y_encoded = to_categorical(y)
 X_train, X_temp, y_train, y_temp = train_test_split(X_scaled, y_encoded, test_size=0.4, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-# ========================
-# 5. Define & Compile Model
-# ========================
+
 model = Sequential([
     Dense(64, activation='sigmoid', kernel_regularizer=l2(0.001), input_shape=(X_train.shape[1],)),
     BatchNormalization(),
@@ -88,9 +76,7 @@ model.compile(
     metrics=['accuracy']
 )
 
-# ========================
-# 6. EarlyStopping Callback
-# ========================
+
 early_stop = EarlyStopping(
     monitor='val_loss',
     patience=5,
@@ -98,9 +84,7 @@ early_stop = EarlyStopping(
     verbose=1
 )
 
-# ========================
-# 7. Train the Model
-# ========================
+
 # Compute class weights
 y_integers = np.argmax(y_encoded, axis=1)
 class_weights = class_weight.compute_class_weight(
@@ -121,9 +105,7 @@ history = model.fit(
     verbose=1
 )
 
-# ========================
-# 8. Evaluate and Plot
-# ========================
+
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
 print(f"\n✅ Test Accuracy: {accuracy:.2f}")
 
@@ -152,10 +134,6 @@ plt.grid(True)
 
 plt.tight_layout()
 # plt.show()
-
-# ========================
-# 9. Confusion Matrix & Metrics
-# ========================
 
 # Predict classes
 y_pred_probs = model.predict(X_test)
