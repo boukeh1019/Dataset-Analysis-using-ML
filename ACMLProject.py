@@ -56,7 +56,7 @@ X_test_processed = preprocessor.transform(X_test)
 
 input_dim = X_train_processed.shape[1]
 model = Sequential([
-    Dense(128, activation='relu', input_dim=input_dim),
+    Dense(128, activation='sigmoid', input_dim=input_dim),
     Dropout(0.4),  # increased dropout for stronger regularization
     Dense(64, activation='relu'),
     Dropout(0.3),
@@ -66,14 +66,14 @@ model = Sequential([
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
 
 
-early_stop = EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True)
+early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 checkpoint = ModelCheckpoint('best_model.keras', monitor='val_loss', save_best_only=True, verbose=1)
 
 
 history = model.fit(
     X_train_processed, y_train,
     validation_data=(X_val_processed, y_val),
-    epochs=500,
+    epochs=200,
     batch_size=32,  # adjusted for efficiency
     callbacks=[early_stop, checkpoint],
     verbose=1
@@ -115,15 +115,15 @@ rf.fit(X_all_processed, y)
 cat_feature_names = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_features)
 all_feature_names = numerical_features + list(cat_feature_names)
 
-# Plot top features
-importances = rf.feature_importances_
-indices = np.argsort(importances)[::-1]
-top_n = 10
+# # Plot top features
+# importances = rf.feature_importances_
+# indices = np.argsort(importances)[::-1]
+# top_n = 10
 
-plt.figure(figsize=(10, 6))
-sns.barplot(x=importances[indices][:top_n], y=np.array(all_feature_names)[indices][:top_n])
-plt.title("Top 10 Feature Importances (Random Forest)")
-plt.xlabel("Importance Score")
-plt.ylabel("Feature")
-plt.tight_layout()
+# plt.figure(figsize=(10, 6))
+# sns.barplot(x=importances[indices][:top_n], y=np.array(all_feature_names)[indices][:top_n])
+# plt.title("Top 10 Feature Importances (Random Forest)")
+# plt.xlabel("Importance Score")
+# plt.ylabel("Feature")
+# plt.tight_layout()
 plt.show()
