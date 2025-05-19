@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from tensorflow.keras.models import Sequential
@@ -37,7 +37,8 @@ categorical_features = [
 
 numerical_features = [col for col in X.columns if col not in categorical_features]
 
-numeric_transformer = StandardScaler()
+numeric_transformer = MinMaxScaler()
+# numeric_transformer = StandardScaler()
 categorical_transformer = OneHotEncoder(drop='first', handle_unknown='ignore')
 
 #refining features for processing
@@ -46,18 +47,18 @@ preprocessor = ColumnTransformer([
     ('cat', categorical_transformer, categorical_features)
 ])
 
-# X_preprocessed = preprocessor.fit_transform(X)
+X_preprocessed = preprocessor.fit_transform(X)
 
 
-# cat_feature_names = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_features)
-# all_feature_names = numerical_features + list(cat_feature_names)
+cat_feature_names = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_features)
+all_feature_names = numerical_features + list(cat_feature_names)
 
-# X_preprocessed_df = pd.DataFrame(X_preprocessed.toarray() if hasattr(X_preprocessed, "toarray") else X_preprocessed,
-#                                  columns=all_feature_names)
+X_preprocessed_df = pd.DataFrame(X_preprocessed.toarray() if hasattr(X_preprocessed, "toarray") else X_preprocessed,
+                                 columns=all_feature_names)
 
 
-# X_preprocessed_df.to_csv('newdata1.csv', index=False)
-# print(X_preprocessed_df.head())
+X_preprocessed_df.to_csv('newdata1.csv', index=False)
+print(X_preprocessed_df.head())
 
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
