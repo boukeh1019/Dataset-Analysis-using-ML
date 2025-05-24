@@ -98,16 +98,16 @@ class_weights_dict = dict(enumerate(class_weights))
 history = model.fit(
     X_train, y_train,
     validation_data=(X_val, y_val),
-    epochs=100,
+    epochs=200,
     batch_size=32,
-    callbacks=[early_stop],
+    # callbacks=[early_stop],
     class_weight=class_weights_dict,
     verbose=1
 )
 
 
 loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-print(f"\n✅ Test Accuracy: {accuracy:.2f}")
+print(f"\n Test Accuracy: {accuracy:.2f}")
 
 # Plot Accuracy and Loss
 plt.figure(figsize=(12, 5))
